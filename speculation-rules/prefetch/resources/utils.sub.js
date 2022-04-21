@@ -67,15 +67,35 @@ function getPrefetchUrlList(n) {
   return urls;
 }
 
+function getCrossOriginCookiePrefetchUrl() {
+  let params = new URLSearchParams({
+    uuid: token(),
+    origin: `${SR_PREFETCH_UTILS_URL.protocol}//${SR_PREFETCH_UTILS_URL.host}`
+  });
+  let url = new URL(`prefetch.py?${params}`, SR_PREFETCH_UTILS_URL);
+  url.hostname = PREFETCH_PROXY_BYPASS_HOST;
+  return url;
+}
+
 function getRedirectUrl() {
   let params = new URLSearchParams({uuid: token()});
   return new URL(`redirect.py?${params}`, SR_PREFETCH_UTILS_URL);
 }
 
 async function isUrlPrefetched(url) {
-  let response = await fetch(url, {redirect: 'follow'});
-  assert_true(response.ok);
-  return response.json();
+  let json = await getPrefetchUrlStatus(url);
+  return json["prefetch"];
+}
+
+async function getPrefetchUrlStatus(url) {
+  let json;
+  await fetch(url, {redirect: 'follow', credentials:"include"})
+    .then(response => {
+      if(response.ok) {
+        json = response.json();
+      }
+    });
+    return json;
 }
 
 // Must also include /common/utils.js and /common/dispatcher/dispatcher.js to use this.
